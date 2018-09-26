@@ -1,12 +1,4 @@
-
 - [Topics I need to learn](#topics-i-need-to-learn)
-    - [Change Configuration (Chef, Puppet, Salt Stack, **Ansible**)](#change-configuration-chef-puppet-salt-stack-ansible)
-    - [Cloud Native Infrastructure, O'Reilly book on it (service discovery, reverse proxy to service mesh, deployment patterns, web traffic), beyond 12-Factor](#cloud-native-infrastructure-oreilly-book-on-it-service-discovery-reverse-proxy-to-service-mesh-deployment-patterns-web-traffic-beyond-12-factor)
-    - [Basic systems engineering and network engineering, database and/or no-sql exposure](#basic-systems-engineering-and-network-engineering-database-andor-no-sql-exposure)
-    - [CICD continuous integration-delivery pipeline (**Jenkins**, **Gitlab**)](#cicd-continuous-integration-delivery-pipeline-jenkins-gitlab)
-    - [Infrastructure As Code(**Terraform**, CloudFormation,](#infrastructure-as-codeterraform-cloudformation)
-    - [Ideally two cloud providers, minimal one (AWS, GCP, Azure), and bonus for hybrid-cloud (OpenStack, vSphere, Cobbler, FAI, etc)](#ideally-two-cloud-providers-minimal-one-aws-gcp-azure-and-bonus-for-hybrid-cloud-openstack-vsphere-cobbler-fai-etc)
-    - [optional - local development tool-chain (vagrant, docker-compose, test-kitchen)](#optional---local-development-tool-chain-vagrant-docker-compose-test-kitchen)
 - [Source Control Management](#source-control-management)
     - [Git](#git)
 - [Build Automation](#build-automation)
@@ -27,16 +19,18 @@
 - [Auto Scaling](#auto-scaling)
 - [Canary Testing](#canary-testing)
 - [Fully Automated Deployment](#fully-automated-deployment)
+
+
 # Topics I need to learn
 
-## Change Configuration (Chef, Puppet, Salt Stack, **Ansible**)
+* Change Configuration (Chef, Puppet, Salt Stack, **Ansible**)
 
-## Cloud Native Infrastructure, O'Reilly book on it (service discovery, reverse proxy to service mesh, deployment patterns, web traffic), beyond 12-Factor
-## Basic systems engineering and network engineering, database and/or no-sql exposure
-## CICD continuous integration-delivery pipeline (**Jenkins**, **Gitlab**)
-## Infrastructure As Code(**Terraform**, CloudFormation, 
-## Ideally two cloud providers, minimal one (AWS, GCP, Azure), and bonus for hybrid-cloud (OpenStack, vSphere, Cobbler, FAI, etc)
-## optional - local development tool-chain (vagrant, docker-compose, test-kitchen)
+* Cloud Native Infrastructure, O'Reilly book on it (service discovery, reverse proxy to service mesh, deployment patterns, web traffic), beyond 12-Factor
+* Basic systems engineering and network engineering, database and/or no-sql exposure
+* CICD continuous integration-delivery pipeline (**Jenkins**, **Gitlab**)
+* Infrastructure As Code(**Terraform**, CloudFormation, 
+* Ideally two cloud providers, minimal one (AWS, GCP, Azure), and bonus for hybrid-cloud (OpenStack, vSphere, Cobbler, FAI, etc)
+* optional - local development tool-chain (vagrant, docker-compose, test-kitchen)
 
 Basically, learn how to build, test, deploy a cloud application and supporting infrastructure, and run the testing and delivery through a CI tool. All the concepts come into play.
 
