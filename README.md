@@ -12,6 +12,8 @@
     - [Setting up Jenkins Project](#setting-up-jenkins-project)
 - [Continous Delivery](#continous-delivery)
     - [Jenkins Pipeline](#jenkins-pipeline)
+    - [Stages and Steps](#stages-and-steps)
+    - [Deployment Example](#deployment-example)
 - [Containers](#containers)
 - [Orchestration](#orchestration)
 - [Monitoring](#monitoring)
@@ -226,7 +228,7 @@ Some useful links:
 
 Gradle wrapper documentation: https://docs.gradle.org/current/userguide/gradle_wrapper.html
 
-* Step 1: Setup git
+* Step 1-3: Setup git
 
 ```s
 $ git config --global user.name "name"
@@ -236,8 +238,8 @@ $ cat /home/user/.ssh/id_rsa.pub # copy key and paste it in github account
 $ git clone git@github.com:peoplesoftninja/cicd-pipeline-train-schedule-gradle.git
 # use clone with ssh, if clone with https is used then you will need user/password ssh key won't work
 ```
-* Step 2: Install gradle `./gradlew build` This creates build.gradle and other files
-* Step 3: Edit `build.gradle`
+* Step 4: Install gradle `./gradlew build` This creates build.gradle and other files
+* Step 5-9: Edit `build.gradle`
   
 
 build.gradle
@@ -276,10 +278,10 @@ npm_build.dependsOn npm_test
 npm_test.dependsOn npmInstall
 npm_build.dependsOn npmInstall
 ```
-* Step 4: Run `./gradlew build` this will create the dist folder which will have trainSchedule.zip
-* Step 5: Git add,commit,push
+* Step 9: Run `./gradlew build` this will create the dist folder which will have trainSchedule.zip
+* Step 10: Git add,commit,push
 
-* If we clone a new project which has ./gradlew file then we dont' have to install gradle, we can just use the above command and it will take care of itself. But it is important to have java installed. 
+* If we clone a new project which has ./gradlew file then we don't have to install gradle, we can just use the above command and it will take care of itself. But it is important to have java installed. 
   
 # Continous Integration
 
@@ -344,7 +346,176 @@ sudo tail -f /var/log/jenkins/jenkins.log
 * instead of freestyle project while creating project you will use pipeline
 * Jenkins support scripted and declarative language for pipelinefile
 
+## Stages and Steps
 
+* Jenkinspipeline is divided into stages and steps
+* Stages are large peices of CD process
+* Eg: Build the code, Test the code, Deploy to staging, Deploy to Production
+* Steps are individual tasks that make up each stage
+* Eg: Execute a command, Copy files to server, Restart a service, Wait for input from human
+* Steps are added though special declarative keyword in the jenkins file DSL, plugins can add steps too.
+* [steps documentation](https://jenkins.io/doc/pipeline/steps/)
+
+```js
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Running build automation'
+                sh './gradlew build --no-daemon'
+                archiveArtifacts artifacts: 'dist/trainSchedule.zip'
+            }
+        }
+    }
+}
+```
+
+## Deployment Example
+
+* Continious Delivery means *ensuring* you are always able to deploy *any version* of your code. This is a pre-req to Continious Deployment
+* Continous Deployment means you are actually *deploying* your code frequently
+
+* We do the following
+    * Create 2 servers, one is staging and the other in Prod
+    * In Jenkins download necesseary plugins
+    * Configure Jenkins to connect with github repo
+    * Create a New item  for MultiBranch Pipeline
+    * Define stages in Jenkinsfile
+    * Define steps in Jenkinsfile
+    * prompt a user for approval before moving to prod ( this can be removed in the future in Jenkinsfile
+
+* First step is to create the Stage(DEV) and Prod Servers where we will deploy the code.
+* Creating CentOS server, run the below commands as sudo
+
+```s
+adduser deploy
+echo "deploy:jenkins" | chpasswd
+groupadd train-schedule
+usermod -a -G train-schedule deploy
+echo "deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop train-schedule" >> /etc/sudoers
+echo "deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl start train-schedule" >> /etc/sudoers
+echo -e "[Unit]\\nDescription=Train Schedule\\nAfter=network.target\\n\\n[Service]\\n\\nType=simple\\nWorkingDirectory=/opt/train-schedule\\nExecStart=/usr/bin/node bin/www\\nStandardOutput=syslog\\nStandardError=syslog\\nRestart=on-failure\\n\\n[Install]\\nWantedBy=multi-user.target" > /etc/systemd/system/train-schedule.service
+/usr/bin/systemctl daemon-reload
+mkdir -p /opt/train-schedule
+chown root:train-schedule /opt/train-schedule
+chmod 775 /opt/train-schedule/
+yum -y install nodejs unzip
+```
+* the first 2 echo appends the command in `/etc/sudoers` file which basically gives permission to user `deploy` to run the command
+* The third echo creates the file as shown below
+
+/etc/systemd/system/train-schedule.service
+```s
+[Unit]
+Description=Train Schedule
+After=network.target
+[Service]
+Type=simple
+WorkingDirectory=/opt/train-schedule
+ExecStart=/usr/bin/node bin/www
+StandardOutput=syslog
+StandardError=syslog
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+```
+
+* Make sure all plugins are available
+    * Installing 2 Plugins: `Publish Over ssh` and `Pipeline`
+    * Manage Jenkins -- Install Plugins -- Available --Search for Publish over ssh ( To transfer files to servers DEV/Stage/PRD)--Search for Pipeline and install that plugin as well
+* Add the DEV and PRD servers. 
+    * Manage Jenkins -- Configure System -- Publish Over Ssh (Add SSH Servers) Name:Stage/Prd, Hostname: url, Remote Directory:`/` (Don't add credentials here)
+* Add Credentials 
+    * Credentials--Stores scoped to Jenkins--System(Global Credentials)--Add Credentials--kind(username with pass)--username/password/ID(you will use this in the pipeline file) 
+
+* Creating Pipeline
+* Create New Item--Name--Multibranch pipeline--Branch Source(Github)--Credentials(Add)(use username/passw as ssh won't work here, username is github user and password is ssh)
+* Add the credential--owner is github account--Repos of your account will be added(select the required one)--save
+* As soon as you save jenkins will start building all the branches, since that is the only stage it will only build.
+
+
+* Editing the `Jenkinsfile` to add the pipeline
+Jenkinsfile
+```js
+pipeline {
+    agent any //tells which stage to run, any will run all stages
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Running build automation'
+                sh './gradlew build --no-daemon'
+                archiveArtifacts artifacts: 'dist/trainSchedule.zip'
+            }
+        }
+        stage('DeployToStaging') {
+            when {
+                branch 'master' // this means it will only run in master branch and in no other branch
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'webserver_login', usernameVariable: 'USERNAME', passwordVariable: 'USERPASS')]) { //access credentials from jenkins and stores user/pass values as reference to access below
+                    sshPublisher(
+                        failOnError: true,
+                        continueOnError: false, // won't let deploy further if something goes wrong, makes code more robust
+                        publishers: [
+                            sshPublisherDesc(
+                                configName: 'staging', //server config from jenkins see setup above
+                                sshCredentials: [
+                                    username: "$USERNAME",
+                                    encryptedPassphrase: "$USERPASS"
+                                ], 
+                                transfers: [
+                                    sshTransfer(
+                                        sourceFiles: 'dist/trainSchedule.zip', //transfering from jenkins got generated in build stage
+                                        removePrefix: 'dist/', // without this the dist/ prefix is also used as a zip filename
+                                        remoteDirectory: '/tmp', //in the sever stored here
+                                        execCommand: 'sudo /usr/bin/systemctl stop train-schedule && rm -rf /opt/train-schedule/* && unzip /tmp/trainSchedule.zip -d /opt/train-schedule && sudo /usr/bin/systemctl start train-schedule'
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                }
+            }
+        }
+        stage('DeployToProduction') {
+            when {
+                branch 'master'
+            }
+            steps {
+                input 'Does the staging environment look OK?' // gives a pop up to proceed to abort before deploying to prod
+                milestone(1) //if another build is running it will make sure it finishes and then this is run
+                withCredentials([usernamePassword(credentialsId: 'webserver_login', usernameVariable: 'USERNAME', passwordVariable: 'USERPASS')]) {
+                    sshPublisher(
+                        failOnError: true,
+                        continueOnError: false,
+                        publishers: [
+                            sshPublisherDesc(
+                                configName: 'production',
+                                sshCredentials: [
+                                    username: "$USERNAME",
+                                    encryptedPassphrase: "$USERPASS"
+                                ], 
+                                transfers: [
+                                    sshTransfer(
+                                        sourceFiles: 'dist/trainSchedule.zip',
+                                        removePrefix: 'dist/',
+                                        remoteDirectory: '/tmp',
+                                        execCommand: 'sudo /usr/bin/systemctl stop train-schedule && rm -rf /opt/train-schedule/* && unzip /tmp/trainSchedule.zip -d /opt/train-schedule && sudo /usr/bin/systemctl start train-schedule'
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                }
+            }
+        }
+    }
+}
+
+```
+
+* Once this is done, and gets build. Use the `serverip:3000` to see if website is deployed
 # Containers
 
 2-3
