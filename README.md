@@ -425,7 +425,7 @@ WantedBy=multi-user.target
     * Installing 2 Plugins: `Publish Over ssh` and `Pipeline`
     * Manage Jenkins -- Install Plugins -- Available --Search for Publish over ssh ( To transfer files to servers DEV/Stage/PRD)--Search for Pipeline and install that plugin as well
 * Add the DEV and PRD servers. 
-    * Manage Jenkins -- Configure System -- Publish Over Ssh (Add SSH Servers) Name:Stage/Prd, Hostname: url, Remote Directory:`/` (Don't add credentials here)
+    * Manage Jenkins -- Configure System -- Publish Over Ssh (Add SSH Servers) Name:Stage/Prd, Hostname: url, Remote Directory:`/` (Don't add credentials here, leave user empty )
 * Add Credentials 
     * Credentials--Stores scoped to Jenkins--System(Global Credentials)--Add Credentials--kind(username with pass)--username/password/ID(you will use this in the pipeline file) 
 
@@ -437,14 +437,14 @@ WantedBy=multi-user.target
 
 * Editing the `Jenkinsfile` to add the pipeline
 Jenkinsfile
-```js
+```groovy
 pipeline {
     agent any //tells which stage to run, any will run all stages
     stages {
         stage('Build') {
             steps {
                 echo 'Running build automation'
-                sh './gradlew build --no-daemon'
+                sh './gradlew build --no-daemon' //shuts off jenkins daemon, this is good practice in Jenkins file to optimize the process
                 archiveArtifacts artifacts: 'dist/trainSchedule.zip'
             }
         }
